@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
+#include "tables.h"
 // 在文件开头添加宏定义
 #define Multiply(x, y)                                \
       (  ((y & 1) * x) ^                              \
@@ -10,143 +11,11 @@
       ((y>>3 & 1) * xtime(xtime(xtime(x)))) ^         \
       ((y>>4 & 1) * xtime(xtime(xtime(xtime(x))))))   \
 
-// S-box lookup table
-// static void print_state(const char* msg, unsigned char state[4][4]);
-static const unsigned char sbox[256] = {
-    //0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
-  0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
-  0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
-  0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
-  0x04, 0xc7, 0x23, 0xc3, 0x18, 0x96, 0x05, 0x9a, 0x07, 0x12, 0x80, 0xe2, 0xeb, 0x27, 0xb2, 0x75,
-  0x09, 0x83, 0x2c, 0x1a, 0x1b, 0x6e, 0x5a, 0xa0, 0x52, 0x3b, 0xd6, 0xb3, 0x29, 0xe3, 0x2f, 0x84,
-  0x53, 0xd1, 0x00, 0xed, 0x20, 0xfc, 0xb1, 0x5b, 0x6a, 0xcb, 0xbe, 0x39, 0x4a, 0x4c, 0x58, 0xcf,
-  0xd0, 0xef, 0xaa, 0xfb, 0x43, 0x4d, 0x33, 0x85, 0x45, 0xf9, 0x02, 0x7f, 0x50, 0x3c, 0x9f, 0xa8,
-  0x51, 0xa3, 0x40, 0x8f, 0x92, 0x9d, 0x38, 0xf5, 0xbc, 0xb6, 0xda, 0x21, 0x10, 0xff, 0xf3, 0xd2,
-  0xcd, 0x0c, 0x13, 0xec, 0x5f, 0x97, 0x44, 0x17, 0xc4, 0xa7, 0x7e, 0x3d, 0x64, 0x5d, 0x19, 0x73,
-  0x60, 0x81, 0x4f, 0xdc, 0x22, 0x2a, 0x90, 0x88, 0x46, 0xee, 0xb8, 0x14, 0xde, 0x5e, 0x0b, 0xdb,
-  0xe0, 0x32, 0x3a, 0x0a, 0x49, 0x06, 0x24, 0x5c, 0xc2, 0xd3, 0xac, 0x62, 0x91, 0x95, 0xe4, 0x79,
-  0xe7, 0xc8, 0x37, 0x6d, 0x8d, 0xd5, 0x4e, 0xa9, 0x6c, 0x56, 0xf4, 0xea, 0x65, 0x7a, 0xae, 0x08,
-  0xba, 0x78, 0x25, 0x2e, 0x1c, 0xa6, 0xb4, 0xc6, 0xe8, 0xdd, 0x74, 0x1f, 0x4b, 0xbd, 0x8b, 0x8a,
-  0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e,
-  0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
-  0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16 };
 
-// Inverse S-box lookup table
-static const unsigned char rsbox[256] = {
-    0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
-  0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
-  0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e,
-  0x08, 0x2e, 0xa1, 0x66, 0x28, 0xd9, 0x24, 0xb2, 0x76, 0x5b, 0xa2, 0x49, 0x6d, 0x8b, 0xd1, 0x25,
-  0x72, 0xf8, 0xf6, 0x64, 0x86, 0x68, 0x98, 0x16, 0xd4, 0xa4, 0x5c, 0xcc, 0x5d, 0x65, 0xb6, 0x92,
-  0x6c, 0x70, 0x48, 0x50, 0xfd, 0xed, 0xb9, 0xda, 0x5e, 0x15, 0x46, 0x57, 0xa7, 0x8d, 0x9d, 0x84,
-  0x90, 0xd8, 0xab, 0x00, 0x8c, 0xbc, 0xd3, 0x0a, 0xf7, 0xe4, 0x58, 0x05, 0xb8, 0xb3, 0x45, 0x06,
-  0xd0, 0x2c, 0x1e, 0x8f, 0xca, 0x3f, 0x0f, 0x02, 0xc1, 0xaf, 0xbd, 0x03, 0x01, 0x13, 0x8a, 0x6b,
-  0x3a, 0x91, 0x11, 0x41, 0x4f, 0x67, 0xdc, 0xea, 0x97, 0xf2, 0xcf, 0xce, 0xf0, 0xb4, 0xe6, 0x73,
-  0x96, 0xac, 0x74, 0x22, 0xe7, 0xad, 0x35, 0x85, 0xe2, 0xf9, 0x37, 0xe8, 0x1c, 0x75, 0xdf, 0x6e,
-  0x47, 0xf1, 0x1a, 0x71, 0x1d, 0x29, 0xc5, 0x89, 0x6f, 0xb7, 0x62, 0x0e, 0xaa, 0x18, 0xbe, 0x1b,
-  0xfc, 0x56, 0x3e, 0x4b, 0xc6, 0xd2, 0x79, 0x20, 0x9a, 0xdb, 0xc0, 0xfe, 0x78, 0xcd, 0x5a, 0xf4,
-  0x1f, 0xdd, 0xa8, 0x33, 0x88, 0x07, 0xc7, 0x31, 0xb1, 0x12, 0x10, 0x59, 0x27, 0x80, 0xec, 0x5f,
-  0x60, 0x51, 0x7f, 0xa9, 0x19, 0xb5, 0x4a, 0x0d, 0x2d, 0xe5, 0x7a, 0x9f, 0x93, 0xc9, 0x9c, 0xef,
-  0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
-  0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d };
+#define rotr32(value, shift) ((value >> shift) ^ (value << (32 - shift)))
 
-// Round constants
-// static const unsigned char Rcon[11] = {
-//     0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
-// };
-
-// Helper functions
 static unsigned char xtime(unsigned char x) {
     return ((x<<1) ^ (((x>>7) & 1) * 0x1b));
-}
-
-static void SubBytes(unsigned char state[4][4]) {
-    for(int i = 0; i < 4; i++) {
-        for(int j = 0; j < 4; j++) {
-            state[i][j] = sbox[state[i][j]];
-        }
-    }
-}
-
-static void InvSubBytes(unsigned char state[4][4]) {
-    for(int i = 0; i < 4; i++) {
-        for(int j = 0; j < 4; j++) {
-            state[i][j] = rsbox[state[i][j]];
-        }
-    }
-}
-
-static void ShiftRows(unsigned char state[4][4]) {
-    unsigned char temp;
-    
-    // 第一行不移动
-    
-    // 第二行循环左移1位
-    temp = state[1][0];
-    state[1][0] = state[1][1];
-    state[1][1] = state[1][2];
-    state[1][2] = state[1][3];
-    state[1][3] = temp;
-    
-    // 第三行循环左移2位
-    temp = state[2][0];
-    state[2][0] = state[2][2];
-    state[2][2] = temp;
-    temp = state[2][1];
-    state[2][1] = state[2][3];
-    state[2][3] = temp;
-    
-    // 第四行循环左移3位
-    temp = state[3][3];
-    state[3][3] = state[3][2];
-    state[3][2] = state[3][1];
-    state[3][1] = state[3][0];
-    state[3][0] = temp;
-}
-
-static void InvShiftRows(unsigned char state[4][4]) {
-    unsigned char temp;
-    
-    // 第一行不移动
-    
-    // 第二行循环右移1位
-    temp = state[1][3];
-    state[1][3] = state[1][2];
-    state[1][2] = state[1][1];
-    state[1][1] = state[1][0];
-    state[1][0] = temp;
-    
-    // 第三行循环右移2位
-    temp = state[2][0];
-    state[2][0] = state[2][2];
-    state[2][2] = temp;
-    temp = state[2][1];
-    state[2][1] = state[2][3];
-    state[2][3] = temp;
-    
-    // 第四行循环右移3位
-    temp = state[3][0];
-    state[3][0] = state[3][1];
-    state[3][1] = state[3][2];
-    state[3][2] = state[3][3];
-    state[3][3] = temp;
-}
-
-static void MixColumns(unsigned char state[4][4]) {
-    unsigned char temp[4];
-    
-    for(int col = 0; col < 4; col++) {
-        // 保存当前列
-        for(int row = 0; row < 4; row++) {
-            temp[row] = state[row][col];
-        }
-        
-        // 计算新的列值
-        state[0][col] = (unsigned char)(xtime(temp[0]) ^ xtime(temp[1]) ^ temp[1] ^ temp[2] ^ temp[3]);
-        state[1][col] = (unsigned char)(temp[0] ^ xtime(temp[1]) ^ xtime(temp[2]) ^ temp[2] ^ temp[3]);
-        state[2][col] = (unsigned char)(temp[0] ^ temp[1] ^ xtime(temp[2]) ^ xtime(temp[3]) ^ temp[3]);
-        state[3][col] = (unsigned char)(xtime(temp[0]) ^ temp[0] ^ temp[1] ^ temp[2] ^ xtime(temp[3]));
-    }
 }
 
 static void InvMixColumns(unsigned char state[4][4]) {
@@ -175,215 +44,306 @@ static const uint8_t Rcon[11] = {
     0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36, 0x00  // Last 0x00 is dummy for simplification
 };
 
-static void sub_word(uint8_t *w) {
-    for (int i = 0; i < 4; i++) {
-        w[i] = sbox[w[i]];
-    }
-}
-
-static void rot_word(uint8_t *w) {
-    uint8_t tmp = w[0];
-    w[0] = w[1];
-    w[1] = w[2];
-    w[2] = w[3];
-    w[3] = tmp;
-}
-
 int aes_make_enc_subkeys(const unsigned char key[16], unsigned char subKeys[11][16]) {
-    int i, j;
-    uint8_t temp[4], k[4 * 4]; // k[4 * 4] stores the previous 4 words
+    int i;
+    uint32_t *rk = (uint32_t *)subKeys;
+    uint32_t temp;
 
-    memcpy(subKeys[0], key, 16); // The first round key is the key itself
+    // 第一轮密钥，保持正序
+    for (i = 0; i < 4; i++) {
+        rk[i] = ((uint32_t)key[4*i+3]) | 
+                ((uint32_t)key[4*i+2] << 8) |
+                ((uint32_t)key[4*i+1] << 16) |
+                ((uint32_t)key[4*i] << 24);
+    }
 
-    for (i = 1; i < 11; i++) {
-        // Get the previous 4 words
-        memcpy(k, &subKeys[i-1][0], 16);
-
-        // Perform the key schedule core (rotword and subword on the last word and Rcon addition)
-        memcpy(temp, &k[12], 4); // Last word
-        rot_word(temp);
-        sub_word(temp);
-        temp[0] ^= Rcon[i-1];
-
-        for (j = 0; j < 4; j++) { // First word
-            k[j] = temp[j] ^ k[j];
+    // 后续轮密钥生成
+    for (i = 4; i < 44; i++) {
+        temp = rk[i-1];
+        if (i % 4 == 0) {
+            // RotWord
+            temp = (temp << 8) | (temp >> 24);
+            
+            // SubWord (保持正序)
+            temp = ((uint32_t)sbox[temp & 0xFF]) |
+                  ((uint32_t)sbox[(temp >> 8) & 0xFF] << 8) |
+                  ((uint32_t)sbox[(temp >> 16) & 0xFF] << 16) |
+                  ((uint32_t)sbox[(temp >> 24) & 0xFF] << 24);
+            
+            // Rcon
+            temp ^= (uint32_t)Rcon[i/4 - 1] << 24;
         }
-
-        for (j = 4; j < 16; j++) { // Next three words
-            k[j] = k[j - 4] ^ k[j];
-        }
-
-        memcpy(subKeys[i], k, 16);
+        rk[i] = rk[i-4] ^ temp;
     }
 
     return 0;
 }
 
 int aes_make_dec_subkeys(const unsigned char key[16], unsigned char subKeys[11][16]) {
-    // First, generate the encryption subkeys
-    aes_make_enc_subkeys(key, subKeys);
+    uint32_t *rk = (uint32_t *)subKeys;
+    uint32_t temp;
+    int i;
 
-    // Apply inverse mix columns to all round keys except the first and the last
-    unsigned char temp_state[4][4];
-    for (int i = 1; i < 10; i++) {
-        // Convert subkey from column-major order to 4x4 matrix
-        for (int col = 0; col < 4; col++) {
-            for (int row = 0; row < 4; row++) {
-                temp_state[row][col] = subKeys[i][col * 4 + row];
+    // 1. 生成初始轮密钥（与加密相同）
+    for (i = 0; i < 4; i++) {
+        rk[i] = ((uint32_t)key[4*i+3]) | 
+                ((uint32_t)key[4*i+2] << 8) |
+                ((uint32_t)key[4*i+1] << 16) |
+                ((uint32_t)key[4*i] << 24);
+    }
+
+    // 2. 生成后续轮密钥
+    for (i = 4; i < 44; i++) {
+        temp = rk[i-1];
+        if (i % 4 == 0) {
+            temp = (temp << 8) | (temp >> 24);
+            temp = ((uint32_t)sbox[temp & 0xFF]) |
+                  ((uint32_t)sbox[(temp >> 8) & 0xFF] << 8) |
+                  ((uint32_t)sbox[(temp >> 16) & 0xFF] << 16) |
+                  ((uint32_t)sbox[(temp >> 24) & 0xFF] << 24);
+            temp ^= (uint32_t)Rcon[i/4 - 1] << 24;
+        }
+        rk[i] = rk[i-4] ^ temp;
+    }
+
+    // 3. 对中间轮密钥应用InvMixColumns
+    unsigned char state[4][4];
+    for (i = 1; i < 10; i++) {
+        // 转换为4x4矩阵
+        for (int r = 0; r < 4; r++) {
+            for (int c = 0; c < 4; c++) {
+                state[r][c] = (uint8_t)(rk[i*4 + c] >> (24 - 8*r));
             }
         }
-
-        // Apply inverse mix columns
-        InvMixColumns(temp_state);
-
-        // Convert the processed matrix back to column-major order in the subKeys array
-        for (int col = 0; col < 4; col++) {
-            for (int row = 0; row < 4; row++) {
-                subKeys[i][col * 4 + row] = temp_state[row][col];
-            }
+        
+        // 应用InvMixColumns
+        InvMixColumns(state);
+        
+        // 转换回32位值
+        for (int c = 0; c < 4; c++) {
+            rk[i*4 + c] = ((uint32_t)state[0][c] << 24) |
+                         ((uint32_t)state[1][c] << 16) |
+                         ((uint32_t)state[2][c] << 8) |
+                         ((uint32_t)state[3][c]);
         }
     }
 
-    // Reverse the order of subkeys to prepare them for decryption
-    unsigned char temp[16];
-    for (int i = 0; i < 5; i++) {
-        memcpy(temp, subKeys[i], 16);
-        memcpy(subKeys[i], subKeys[10 - i], 16);
-        memcpy(subKeys[10 - i], temp, 16);
+    // 4. 修改反转轮密钥顺序的部分
+    uint32_t temp1[4];
+    for (i = 0; i < 5; i++) {  // 只需要反转一半，因为是对称交换
+        // 保存前面的4个32位值
+        temp1[0] = rk[i*4];
+        temp1[1] = rk[i*4 + 1];
+        temp1[2] = rk[i*4 + 2];
+        temp1[3] = rk[i*4 + 3];
+        
+        // 与对应的后面的4个32位值交换
+        rk[i*4] = rk[40 - i*4];
+        rk[i*4 + 1] = rk[40 - i*4 + 1];
+        rk[i*4 + 2] = rk[40 - i*4 + 2];
+        rk[i*4 + 3] = rk[40 - i*4 + 3];
+        
+        // 将保存的值放到后面的位置
+        rk[40 - i*4] = temp1[0];
+        rk[40 - i*4 + 1] = temp1[1];
+        rk[40 - i*4 + 2] = temp1[2];
+        rk[40 - i*4 + 3] = temp1[3];
     }
 
     return 0;
 }
 
-static void AddRoundKey(unsigned char state[4][4], const unsigned char* roundKey) {
-    for(int col = 0; col < 4; col++) {
-        for(int row = 0; row < 4; row++) {
-            state[row][col] ^= roundKey[col * 4 + row];
-        }
-    }
-}
 
 void aes_encrypt_block(const unsigned char *input, unsigned char subKeys[11][16], unsigned char *output) {
-    // Print all round keys first
-    // printf("\nRound keys:\n");
-    // for(int i = 0; i < 11; i++) {
-    //     printf("Round %d: ", i);
-    //     for(int j = 0; j < 16; j++) {
-    //         printf("%02x ", subKeys[i][j]);
-    //     }
-    //     printf("\n");
-    // }
-    // printf("\n");
+    uint32_t s0, s1, s2, s3, t0, t1, t2, t3;
+    const uint32_t *rk = (const uint32_t *)subKeys;
+    // 按行优先加载输入数据
+    s0 = ((uint32_t)input[0] << 24) | ((uint32_t)input[1] << 16) |
+         ((uint32_t)input[2] << 8) | (uint32_t)input[3];
+    s1 = ((uint32_t)input[4] << 24) | ((uint32_t)input[5] << 16) |
+         ((uint32_t)input[6] << 8) | (uint32_t)input[7];
+    s2 = ((uint32_t)input[8] << 24) | ((uint32_t)input[9] << 16) |
+         ((uint32_t)input[10] << 8) | (uint32_t)input[11];
+    s3 = ((uint32_t)input[12] << 24) | ((uint32_t)input[13] << 16) |
+         ((uint32_t)input[14] << 8) | (uint32_t)input[15];
 
-    unsigned char state[4][4];
-    
-    // Copy input to state array in column-major order
-    for(int i = 0; i < 4; i++) {
-        for(int j = 0; j < 4; j++) {
-            state[j][i] = input[i * 4 + j];
-        }
+    // 轮密钥加就是直接异或,不需要移位
+    s0 ^= rk[0];  // 正确的,因为rk[0]已经是正确格式的32位值
+    s1 ^= rk[1];
+    s2 ^= rk[2];
+    s3 ^= rk[3];
+
+    // 主轮
+    for(int i = 1; i < 10; i++) {
+
+        t0 = Te0[(s0 >> 24) & 0xff] ^ Te1[(s1 >> 16) & 0xff] ^
+             Te2[(s2 >> 8) & 0xff] ^ Te3[s3 & 0xff] ^ rk[i*4];
+        t1 = Te0[(s1 >> 24) & 0xff] ^ Te1[(s2 >> 16) & 0xff] ^
+             Te2[(s3 >> 8) & 0xff] ^ Te3[s0 & 0xff] ^ rk[i*4 + 1];
+        t2 = Te0[(s2 >> 24) & 0xff] ^ Te1[(s3 >> 16) & 0xff] ^
+             Te2[(s0 >> 8) & 0xff] ^ Te3[s1 & 0xff] ^ rk[i*4 + 2];
+        t3 = Te0[(s3 >> 24) & 0xff] ^ Te1[(s0 >> 16) & 0xff] ^
+             Te2[(s1 >> 8) & 0xff] ^ Te3[s2 & 0xff] ^ rk[i*4 + 3];
+
+        s0 = t0;
+        s1 = t1;
+        s2 = t2;
+        s3 = t3;
     }
-    // print_state("Initial state", state);
+
+
+    // 1. SubBytes: 先对所有字节进行S盒替换
+    uint32_t b0 = ((uint32_t)Te4[(t0 >> 24) & 0xff] << 24) |
+                  ((uint32_t)Te4[(t0 >> 16) & 0xff] << 16) |
+                  ((uint32_t)Te4[(t0 >> 8) & 0xff] << 8) |
+                  ((uint32_t)Te4[t0 & 0xff]);
+    uint32_t b1 = ((uint32_t)Te4[(t1 >> 24) & 0xff] << 24) |
+                  ((uint32_t)Te4[(t1 >> 16) & 0xff] << 16) |
+                  ((uint32_t)Te4[(t1 >> 8) & 0xff] << 8) |
+                  ((uint32_t)Te4[t1 & 0xff]);
+    uint32_t b2 = ((uint32_t)Te4[(t2 >> 24) & 0xff] << 24) |
+                  ((uint32_t)Te4[(t2 >> 16) & 0xff] << 16) |
+                  ((uint32_t)Te4[(t2 >> 8) & 0xff] << 8) |
+                  ((uint32_t)Te4[t2 & 0xff]);
+    uint32_t b3 = ((uint32_t)Te4[(t3 >> 24) & 0xff] << 24) |
+                  ((uint32_t)Te4[(t3 >> 16) & 0xff] << 16) |
+                  ((uint32_t)Te4[(t3 >> 8) & 0xff] << 8) |
+                  ((uint32_t)Te4[t3 & 0xff]);
+    // 2. ShiftRows: 按行移位
+    s0 = (b0 & 0xff000000) | (b1 & 0x00ff0000) | (b2 & 0x0000ff00) | (b3 & 0x000000ff);
+    s1 = (b1 & 0xff000000) | (b2 & 0x00ff0000) | (b3 & 0x0000ff00) | (b0 & 0x000000ff);
+    s2 = (b2 & 0xff000000) | (b3 & 0x00ff0000) | (b0 & 0x0000ff00) | (b1 & 0x000000ff);
+    s3 = (b3 & 0xff000000) | (b0 & 0x00ff0000) | (b1 & 0x0000ff00) | (b2 & 0x000000ff);
+    // 3. AddRoundKey: 与最后一轮密钥异或
+    s0 ^= rk[40];
+    s1 ^= rk[41];
+    s2 ^= rk[42];
+    s3 ^= rk[43];
+
+
+    // 按行优先顺序存储输出
+    output[0] = (uint8_t)(s0 >> 24);   // 第0行
+    output[1] = (uint8_t)(s0 >> 16);
+    output[2] = (uint8_t)(s0 >> 8);
+    output[3] = (uint8_t)(s0);
     
-    // Initial round
-    AddRoundKey(state, subKeys[0]);
-    // print_state("After initial AddRoundKey", state);
+    output[4] = (uint8_t)(s1 >> 24);   // 第1行
+    output[5] = (uint8_t)(s1 >> 16);
+    output[6] = (uint8_t)(s1 >> 8);
+    output[7] = (uint8_t)(s1);
     
-    // Main rounds
-    for(int round = 1; round < 10; round++) {
-        SubBytes(state);
-        // print_state("After SubBytes", state);
-        
-        ShiftRows(state);
-        // print_state("After ShiftRows", state);
-        
-        MixColumns(state);
-        // print_state("After MixColumns", state);
-        
-        AddRoundKey(state, subKeys[round]);
-        // print_state("After AddRoundKey", state);
-    }
+    output[8] = (uint8_t)(s2 >> 24);    // 第2行
+    output[9] = (uint8_t)(s2 >> 16);
+    output[10] = (uint8_t)(s2 >> 8);
+    output[11] = (uint8_t)(s2);
     
-    // Final round
-    SubBytes(state);
-    ShiftRows(state);
-    AddRoundKey(state, subKeys[10]);
-    // print_state("Final state", state);
-    
-    // Copy state to output in column-major order
-    for(int i = 0; i < 4; i++) {
-        for(int j = 0; j < 4; j++) {
-            output[i * 4 + j] = state[j][i];
-        }
-    }
+    output[12] = (uint8_t)(s3 >> 24);  // 第3行
+    output[13] = (uint8_t)(s3 >> 16);
+    output[14] = (uint8_t)(s3 >> 8);
+    output[15] = (uint8_t)(s3);
 }
 
 void aes_decrypt_block(const unsigned char *input, unsigned char subKeys[11][16], unsigned char *output) {
-    // printf("\nDecryption Round keys:\n");
-    for(int i = 0; i < 11; i++) {
-        // printf("Round %d: ", i);
-        for(int j = 0; j < 16; j++) {
-            // printf("%02x ", subKeys[i][j]);
-        }
-        // printf("\n");
+    uint32_t s0, s1, s2, s3, t0, t1, t2, t3, tmp;
+    const uint32_t *rk = (const uint32_t *)subKeys;
+    // 按行优先加载输入数据
+    s0 = ((uint32_t)input[0] << 24) | ((uint32_t)input[1] << 16) |
+         ((uint32_t)input[2] << 8) | (uint32_t)input[3];
+    s1 = ((uint32_t)input[4] << 24) | ((uint32_t)input[5] << 16) |
+         ((uint32_t)input[6] << 8) | (uint32_t)input[7];
+    s2 = ((uint32_t)input[8] << 24) | ((uint32_t)input[9] << 16) |
+         ((uint32_t)input[10] << 8) | (uint32_t)input[11];
+    s3 = ((uint32_t)input[12] << 24) | ((uint32_t)input[13] << 16) |
+         ((uint32_t)input[14] << 8) | (uint32_t)input[15];
+    // 初始轮密钥加
+    s0 ^= rk[0];
+    s1 ^= rk[1];
+    s2 ^= rk[2];
+    s3 ^= rk[3];
+    // 主轮逻辑
+    for (int i = 1; i < 10; i++) {
+        t0 = TD[(s0 >> 24) & 0xFF];
+        tmp = TD[(s3 >> 16) & 0xFF];
+        t0 ^= rotr32(tmp, 8);
+        tmp = TD[(s2 >> 8) & 0xFF];
+        t0 ^= rotr32(tmp, 16);
+        tmp = TD[(s1 >> 0) & 0xFF];
+        t0 ^= rotr32(tmp, 24);
+        // t1
+        t1 = TD[(s1 >> 24) & 0xFF];
+        tmp = TD[(s0 >> 16) & 0xFF];
+        t1 ^= rotr32(tmp, 8);
+        tmp = TD[(s3 >> 8) & 0xFF];
+        t1 ^= rotr32(tmp, 16);
+        tmp = TD[(s2 >> 0) & 0xFF];
+        t1 ^= rotr32(tmp, 24);
+        // t2
+        t2 = TD[(s2 >> 24) & 0xFF];
+        tmp = TD[(s1 >> 16) & 0xFF];
+        t2 ^= rotr32(tmp, 8);
+        tmp = TD[(s0 >> 8) & 0xFF];
+        t2 ^= rotr32(tmp, 16);
+        tmp = TD[(s3 >> 0) & 0xFF];
+        t2 ^= rotr32(tmp, 24);
+        // t3
+        t3 = TD[(s3 >> 24) & 0xFF];
+        tmp = TD[(s2 >> 16) & 0xFF];
+        t3 ^= rotr32(tmp, 8);
+        tmp = TD[(s1 >> 8) & 0xFF];
+        t3 ^= rotr32(tmp, 16);
+        tmp = TD[(s0 >> 0) & 0xFF];
+        t3 ^= rotr32(tmp, 24);
+        s0 = t0 ^ rk[i*4];
+        s1 = t1 ^ rk[i*4 + 1];
+        s2 = t2 ^ rk[i*4 + 2];
+        s3 = t3 ^ rk[i*4 + 3];
     }
-    // printf("\n");   
 
-    unsigned char state[4][4];
-    
-    // Copy input to state array in column-major order
-    for(int i = 0; i < 4; i++) {
-        for(int j = 0; j < 4; j++) {
-            state[j][i] = input[i * 4 + j];
-        }
-    }
-    // print_state("Initial state", state);
-    
-    // Initial round
-    AddRoundKey(state, subKeys[0]);
-    // print_state("After initial AddRoundKey", state);
-    
-    // Main rounds
-    for(int round = 1; round < 10; round++) {
-
-        InvSubBytes(state);
-        // print_state("After InvSubBytes", state);
-
-        InvShiftRows(state);
-        // print_state("After InvShiftRows", state);
-
-        InvMixColumns(state);
-        // print_state("After InvMixColumns", state);
-
-        // printf("Round %d\n", round);
-        // printf("subKeys[round]: ");
-        // for(int i = 0; i < 16; i++) {
-            // printf("%02x ", subKeys[round][i]);
-        // }
-        // printf("\n");
-        AddRoundKey(state, subKeys[round]);
-        // print_state("After AddRoundKey", state);
-    }
-    
-    // Final round
-    InvShiftRows(state);
-    InvSubBytes(state);
-    AddRoundKey(state, subKeys[10]);
-    // print_state("Final state", state);
-    
-    // Copy state to output in column-major order
-    for(int i = 0; i < 4; i++) {
-        for(int j = 0; j < 4; j++) {
-            output[i * 4 + j] = state[j][i];
-        }
-    }
+    // 逆S盒替换
+    t0 = rsbox[(s0 >> 24) & 0xFF] << 24;
+    t0 |= rsbox[(s0 >> 16) & 0xFF] << 16;
+    t0 |= rsbox[(s0 >> 8) & 0xFF] << 8;
+    t0 |= rsbox[(s0 >> 0) & 0xFF] << 0;
+    // t1
+    t1 = rsbox[(s1 >> 24) & 0xFF] << 24;
+    t1 |= rsbox[(s1 >> 16) & 0xFF] << 16;
+    t1 |= rsbox[(s1 >> 8) & 0xFF] << 8;
+    t1 |= rsbox[(s1 >> 0) & 0xFF] << 0;
+    // t2
+    t2 = rsbox[(s2 >> 24) & 0xFF] << 24;
+    t2 |= rsbox[(s2 >> 16) & 0xFF] << 16;
+    t2 |= rsbox[(s2 >> 8) & 0xFF] << 8;
+    t2 |= rsbox[(s2 >> 0) & 0xFF] << 0;
+    // t3
+    t3 = rsbox[(s3 >> 24) & 0xFF] << 24;
+    t3 |= rsbox[(s3 >> 16) & 0xFF] << 16;
+    t3 |= rsbox[(s3 >> 8) & 0xFF] << 8;
+    t3 |= rsbox[(s3 >> 0) & 0xFF] << 0;
+    // Invshiftrows
+    s0 = (t0 & 0xff000000) | (t3 & 0x00ff0000) | (t2 & 0x0000ff00) | (t1 & 0x000000ff);
+    s1 = (t1 & 0xff000000) | (t0 & 0x00ff0000) | (t3 & 0x0000ff00) | (t2 & 0x000000ff);
+    s2 = (t2 & 0xff000000) | (t1 & 0x00ff0000) | (t0 & 0x0000ff00) | (t3 & 0x000000ff);
+    s3 = (t3 & 0xff000000) | (t2 & 0x00ff0000) | (t1 & 0x0000ff00) | (t0 & 0x000000ff);
+    //------------AddRoundKey-------------
+    s0 = s0 ^ rk[40];
+    s1 = s1 ^ rk[41];
+    s2 = s2 ^ rk[42];
+    s3 = s3 ^ rk[43];
+    // 按行优先顺序存储输出
+    output[0] = (uint8_t)(s0 >> 24);
+    output[1] = (uint8_t)(s0 >> 16);
+    output[2] = (uint8_t)(s0 >> 8);
+    output[3] = (uint8_t)(s0);
+    output[4] = (uint8_t)(s1 >> 24);
+    output[5] = (uint8_t)(s1 >> 16);
+    output[6] = (uint8_t)(s1 >> 8);
+    output[7] = (uint8_t)(s1);
+    output[8] = (uint8_t)(s2 >> 24);
+    output[9] = (uint8_t)(s2 >> 16);
+    output[10] = (uint8_t)(s2 >> 8);
+    output[11] = (uint8_t)(s2);
+    output[12] = (uint8_t)(s3 >> 24);
+    output[13] = (uint8_t)(s3 >> 16);
+    output[14] = (uint8_t)(s3 >> 8);
+    output[15] = (uint8_t)(s3);
 }
-// static void print_state(const char* msg, unsigned char state[4][4]) {
-//     printf("\n%s:\n", msg);
-//     for(int i = 0; i < 4; i++) {
-//         for(int j = 0; j < 4; j++) {
-//             printf("%02x ", state[i][j]);
-//         }
-//         printf("\n");
-//     }
-// }

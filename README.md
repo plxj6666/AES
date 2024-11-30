@@ -1,4 +1,8 @@
 # AES
 WHU CryptoHomeWork-AES
 
-目前写的非常垃圾，因为自己就是个垃圾。
+maxspeed:
+encrypt: approximately 3 Gbps
+decrypt: approximately 2.7 Gbps
+
+之前借鉴了不少博客，发现没什么用，原来是自己的解密密钥生成函数都没写对......
